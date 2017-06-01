@@ -1,0 +1,212 @@
+#!/bin/bash
+
+###########################################################################
+#
+# UpGitTaggedSources
+#
+# Description:
+# Send files (tagged) to GIT E/// Repository
+#
+# Author: Jesus A. Ruiz (linuxwayven@gmail.com)
+#
+# Use Mode:
+# 1) Change to local repository folder.
+# 2) Copy this script in that folder.
+# 3) From a bash git console run script file:
+#
+# UpGitTaggedSources.sh
+#
+# Version 1.0
+#
+# CHANGES:
+# V1.0 - JRUIZ - 31/05/2017 - In the beginning everything was darkness.
+#
+###########################################################################
+
+### Global Variables ###
+HOME_DIR=''
+PROTOCOL='ssh'
+USER='integ01'
+IP='10.49.4.208'
+GIT_ROOT_DIR='/app01/integ01/'
+COUNTRY=''
+DEPLOY_TYPE=''
+UPPER_DEPLOY_TYPE=''
+PASSWORD='tcW0A7Cl'
+TAG=''
+FOLDER_NUM='_00000003'
+
+### Utils Functions ###
+
+# Timestamp function
+function timestamp () {
+  date "+%Y/%m/%d - %H:%M:%S"
+}
+
+# Print Welcome Message
+function print_welcome_message () {
+    clear
+    echo '******************************************************'
+    echo ''
+    echo 'UpGitTaggedSources 1.0'
+    echo ''
+    timestamp
+    echo ''
+    echo ''
+}
+
+# Print Bye Message
+function print_byebye_message () {
+    echo ''
+    echo ''
+    timestamp
+    echo ''    
+    echo '******************************************************'
+}
+
+# Print bye message and exit script
+function to_exit () {
+    print_byebye_message
+    echo ''    
+    exit -1
+}
+
+# Print use instrucctions
+function print_instructions () {
+    echo ''
+    echo 'USE: '
+    echo '' 
+    echo 'UpGitTaggedSources.sh  <Deployment_Type> <Country> <TAG> '
+    echo ''
+    echo 'Deployment_Type (OSB / FRW) '
+    echo 'Country (CHILE / PERU) '
+    echo 'TAG (TAG supplied by Release Management) '
+    echo ''
+}
+
+# Print info message
+function print_info_message () {
+    echo 'INFO - '$1
+}
+
+# Print warning message
+function print_warning_message () {
+    echo 'WARNING - '$1
+}
+
+# Print error message
+function print_error_message () {
+    echo 'ERROR - '$1
+}
+
+# Check if a folder is a git repository
+function check_git_repository () {
+    if [ ! -d '.git' ] ; then
+	print_error_message 'This folder is not a Git Repository'
+	to_exit
+    fi
+}
+
+# Check Deploy Type
+function check_deploy_type () {
+    echo -n 'Checking deploy type.. '
+    if [[ -z "$1"  ]] ; then
+	print_error_message 'Incorrect Deploy Type'
+	to_exit
+    else
+	if [ $1 = "OSB" ] || [ $1 = "FRW" ] ; then
+	    echo 'OK'
+	else
+	    print_error_message 'Incorrect Deploy Type'
+	    to_exit
+	fi
+    fi
+}
+
+# Check Country Name
+function check_country_name () {
+    echo -n 'Checking country name.. '
+    if [[ -z "$1"  ]] ; then
+	print_error_message 'Incorrect Country Name'
+	to_exit
+    else
+	if [ $1 = "CHILE" ] || [ $1 = "PERU" ] ; then
+	    echo 'OK'
+	else
+	    print_error_message 'Incorrect Country Name'
+	    to_exit
+	fi
+    fi
+}
+
+# Check TAG Name
+function check_tag_name () {
+    echo -n 'Checking tag name.. '
+    if [[ -z "$1"  ]] ; then
+	print_error_message 'Incorrect TAG Name'
+	to_exit
+    else
+	echo 'OK'
+    fi
+}
+
+# Confirm actions
+function confirm_action () {
+    while true; do
+	read -p "$1 (y/n): " yn
+	case $yn in
+            [Yy]* ) $2; break;;
+            [Nn]* ) to_exit;;
+            * ) echo "Please answer yes or no.";;
+	esac
+    done
+}
+
+# Clone Repository
+function clone_repository() {
+    print_info_message "Cloning repository..."
+    git clone "$CLONE_PATH"
+    print_info_message "Cloning DONE!"
+}
+
+# Create clone path
+function create_clone_path () {
+    echo -n 'Creating clone path...'
+    UPPER_DEPLOY_TYPE="${DEPLOY_TYPE^^}"
+    CLONE_PATH="$PROTOCOL://$USER@$IP$GIT_ROOT_DIR$COUNTRY/$DEPLOY_TYPE/FULLSTACK_$UPPER_DEPLOY_TYPE$FOLDER_NUM"
+    echo 'Created'y
+    print_info_message " Clone Path -> $CLONE_PATH"
+    print_info_message " TAG -> $TAG"
+}
+
+# Read parameters
+function read_parameters {
+
+    # Deployment_Type 
+    read -p 'Deployment Type (OSB / FRW): ' r_deploy_type
+    check_deploy_type $r_deploy_type;
+    DEPLOY_TYPE="${r_deploy_type,,}"
+    
+    # Country (CHILE / PERU)
+    read -p 'Country (CHILE / PERU): ' r_country
+    check_country_name $r_country;
+    COUNTRY="${r_country,,}"
+
+    # TAG (TAG supplied by Release Management)
+    read -p 'TAG (TAG supplied by Release Management): ' r_tag
+    check_tag_name $r_tag;
+    TAG="$r_tag"
+
+    create_clone_path;
+
+    confirm_action 'Clone Repository?' 'clone_repository';
+}
+
+### MAIN ###
+
+print_welcome_message
+check_git_repository
+read_parameters
+to_exit
+
+### THE END ###
